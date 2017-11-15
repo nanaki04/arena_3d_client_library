@@ -56,7 +56,7 @@ module Core =
     | Movement of Vector4
     | Orientation of Vector4
 
-  type Event = EventId * EventType * Option<EventCallback>
+  type Event = Option<EventId> * EventType * Option<EventCallback>
 
   // State
   type Me = Option<Id>
@@ -106,6 +106,7 @@ module Core =
     eventStore: Event list * ProgressId
     eventArchive: EventArchive
     gameState: GameState
+    renderData: RenderData
   }
 
   type StateRecord =
@@ -130,15 +131,27 @@ module Core =
   let getMyId state = state.me
   let getProcessingEvent state = state.processing
   let getEventId (id, _, _) = id
-  let getEventIdNumber ((id, _, _, _), _, _) = id
-  let getEventSpawner ((_, spawner, _, _), _, _) = spawner
-  let getEventSpawnTime ((_, _, spawnTime, _), _, _) = spawnTime
-  let getEventProgressId ((_, _, _, progressId), _, _) = progressId
+  let getEventIdNumber evnt = getEventId evnt |> function
+    | Some (id, _, _, _) -> Some id
+    | _ -> None
+  let getEventSpawner evnt = getEventId evnt |> function
+    | Some (_, spawner, _, _) -> Some spawner
+    | _ -> None
+  let getEventSpawnTime evnt = getEventId evnt |> function
+    | Some (_, _, spawnTime, _) -> Some spawnTime
+    | _ -> None
+  let getEventProgressId evnt = getEventId evnt |> function
+    | Some (_, _, _, progressId) -> Some progressId
+    | _ -> None
   let getEventType (_, eventType, _) = eventType
   let getEventCallback (_, _, callback) = callback
   let getProcessingEventId = getProcessingEvent >> getEventId
   let getProcessingEventType = getProcessingEvent >> getEventType
   let getProcessingEventCallback = getProcessingEvent >> getEventCallback
+  let getProcessingEventIdNumber = getProcessingEvent >> getEventIdNumber
+  let getProcessingEventSpawner = getProcessingEvent >> getEventSpawner
+  let getProcessingEventSpawnTime = getProcessingEvent >> getEventSpawnTime
+  let getProcessingEventProgressId = getProcessingEvent >> getEventProgressId
 
   let getEventStore state = state.eventStore
   let getGameState state = state.gameState
@@ -186,6 +199,9 @@ module Core =
 
   let updateGameState updater state =
     { state with gameState = updater state.gameState }
+
+  let updateMyId myId state =
+    { state with me = myId }
 
   let updatePlayersOnGameState updater gameState =
     { gameState with players = updater gameState.players }
