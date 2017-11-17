@@ -31,16 +31,18 @@ module Core =
     | Animate
     | ChangeScene
     | Reload
-    | Defer
+    | Destroy
+    | Spawn of Id
+    | Print of string
+    | ReportError of string
 
   type RenderData = RenderCommand list
 
   // Events
   type EventSpawner = Id
   type ProgressId = Id
-  type SpawnTime = int
-  type EventId = Id * EventSpawner * SpawnTime * Option<ProgressId>
-  type EventCallback = RenderData -> unit
+  type SpawnTime = float
+  type EventId = Id * Option<EventSpawner> * SpawnTime * Option<ProgressId>
 
   type KeyCode = int
   type DeltaTime = float
@@ -53,10 +55,18 @@ module Core =
     | RightMouseDownEvent
     | LeftMouseUpEvent
     | RightMouseUpEvent
-    | Movement of Vector4
-    | Orientation of Vector4
+    | MovementEvent of Vector4
+    | OrientationEvent of Vector4
+    | LoginEvent of Option<Id>
+    | EventParameterErrorEvent of string
 
-  type Event = Option<EventId> * EventType * Option<EventCallback>
+  type Event = EventId * EventType
+
+  type EventParameters = {
+    id: Option<Id>
+    index: Option<int>
+    code: Option<int>
+  }
 
   // State
   type Me = Option<Id>
@@ -130,24 +140,14 @@ module Core =
 
   let getMyId state = state.me
   let getProcessingEvent state = state.processing
-  let getEventId (id, _, _) = id
-  let getEventIdNumber evnt = getEventId evnt |> function
-    | Some (id, _, _, _) -> Some id
-    | _ -> None
-  let getEventSpawner evnt = getEventId evnt |> function
-    | Some (_, spawner, _, _) -> Some spawner
-    | _ -> None
-  let getEventSpawnTime evnt = getEventId evnt |> function
-    | Some (_, _, spawnTime, _) -> Some spawnTime
-    | _ -> None
-  let getEventProgressId evnt = getEventId evnt |> function
-    | Some (_, _, _, progressId) -> Some progressId
-    | _ -> None
-  let getEventType (_, eventType, _) = eventType
-  let getEventCallback (_, _, callback) = callback
+  let getEventId (id, _) = id
+  let getEventIdNumber ((id, _, _, _), _) = id
+  let getEventSpawner ((_, spawner, _, _), _) = spawner
+  let getEventSpawnTime ((_, _, spawnTime, _), _) = spawnTime
+  let getEventProgressId ((_, _, _, progressId), _) = progressId
+  let getEventType (_, eventType) = eventType
   let getProcessingEventId = getProcessingEvent >> getEventId
   let getProcessingEventType = getProcessingEvent >> getEventType
-  let getProcessingEventCallback = getProcessingEvent >> getEventCallback
   let getProcessingEventIdNumber = getProcessingEvent >> getEventIdNumber
   let getProcessingEventSpawner = getProcessingEvent >> getEventSpawner
   let getProcessingEventSpawnTime = getProcessingEvent >> getEventSpawnTime
@@ -189,6 +189,8 @@ module Core =
   let getSelectedMovement = getMovement "selected"
   let getSelectedMovementId = getSelectedMovement >> maybe getMovementIdFromMovement
 
+  let updateProcessingEvent evnt state =
+    { state with processing = evnt }
   let updateEventStore updater state =
     { state with eventStore = updater state.eventStore }
   let updateEventStoreList updater =
@@ -196,6 +198,8 @@ module Core =
   let updateEventStoreProgressId progressId =
     (fun (eventStore, _) -> (eventStore, progressId)) |> updateEventStore
   let pushEvent evnt = push evnt |> updateEventStoreList
+  let pushProcessingEventToStore state =
+    getProcessingEvent state |> pushEvent <| state
 
   let updateGameState updater state =
     { state with gameState = updater state.gameState }
@@ -248,3 +252,6 @@ module Core =
   let updateSelectedMovement = updateMovement "selected"
   let selectMovement id state =
     Map.add "selected" >> updateMovements |> maybeApply <| getMovement id state <| state
+
+  let pushRenderCommand renderCommand state =
+    { state with renderData = push renderCommand state.renderData }
