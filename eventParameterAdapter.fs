@@ -1,6 +1,6 @@
 namespace Arena
 
-module EventParameterAdapterPlug =
+module EventParameterAdapter =
   open Core
 
   type ParametersIn = {
@@ -30,12 +30,9 @@ module EventParameterAdapterPlug =
     code = None;
   }
 
-  let private convertEventParameters parametersIn =
+  let convertEventParameters parametersIn =
     emptyEventParameters
     |> convertId parametersIn
     |> convertIndex parametersIn
     |> convertCode parametersIn
-
-  let eventParameterAdapterPlug next state =
-    next state
-    |> fun eventHandler eventParameters -> convertEventParameters eventParameters |> eventHandler
+    

@@ -3,18 +3,21 @@ namespace Arena
 module Locators =
   open Locator
   open EventHandling
-  open EventParameterAdapterPlug
+  open EventParameterAdapter
 
-  //let locatorPlugs = [eventParameterAdapterPlug]
-  let locatorPlugs = []
+  let private locatorPlugs = []
 
-  let battleLocatorRegistrationList =
+  let private battleLocatorRegistrationList =
     Map.empty
       .Add("login", loginEvent >> runEvent)
 
-  let registrationList =
+  let private registrationList =
     Map.empty
       .Add("battle", battleLocatorRegistrationList)
 
-  let locate =
+  let private locateEvent =
     createLocator registrationList locatorPlugs eventNotFoundHandler
+
+  let locate domain address =
+    let event = locateEvent domain address
+    fun eventParameters -> convertEventParameters eventParameters |> event
