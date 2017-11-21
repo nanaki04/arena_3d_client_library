@@ -26,7 +26,7 @@ module Core =
     | Rotation of Vector3
     | Scale of Vector3
 
-  type RenderCommand =
+  type RenderCommand<'T> =
     | TransformCommand of Transform
     | Animate
     | ChangeScene
@@ -35,38 +35,9 @@ module Core =
     | Spawn of Id
     | Print of string
     | ReportError of string
+    | Debug of 'T
 
-  type RenderData = RenderCommand list
-
-  // Events
-  type EventSpawner = Id
-  type ProgressId = Id
-  type SpawnTime = float
-  type EventId = Id * Option<EventSpawner> * SpawnTime * Option<ProgressId>
-
-  type KeyCode = int
-  type DeltaTime = float
-
-  type EventType =
-    | ButtonDownEvent of KeyCode
-    | ButtonUpEvent of KeyCode
-    | TickEvent of DeltaTime
-    | LeftMouseDownEvent
-    | RightMouseDownEvent
-    | LeftMouseUpEvent
-    | RightMouseUpEvent
-    | MovementEvent of Vector4
-    | OrientationEvent of Vector4
-    | LoginEvent of Option<Id>
-    | EventParameterErrorEvent of string
-
-  type Event = EventId * EventType
-
-  type EventParameters = {
-    id: Option<Id>
-    index: Option<int>
-    code: Option<int>
-  }
+  type RenderData<'T> = RenderCommand<'T> list
 
   // State
   type Me = Option<Id>
@@ -102,6 +73,31 @@ module Core =
     movements: Movements
   }
 
+  // Events
+  type EventSpawner = Id
+  type ProgressId = Id
+  type SpawnTime = float
+  type EventId = Id * Option<EventSpawner> * SpawnTime * Option<ProgressId>
+
+  type KeyCode = int
+  type DeltaTime = float
+
+  type EventType =
+    | ButtonDownEvent of KeyCode
+    | ButtonUpEvent of KeyCode
+    | TickEvent of DeltaTime
+    | LeftMouseDownEvent
+    | RightMouseDownEvent
+    | LeftMouseUpEvent
+    | RightMouseUpEvent
+    | MovementEvent of Vector4
+    | OrientationEvent of Vector4
+    | LoginEvent of Option<Id>
+    | EventParameterErrorEvent of string
+    | DebugEvent
+
+  type Event = EventId * EventType
+
   type EventArchiveEntry = {
     archive: Event list
     archivedUntil: int
@@ -116,7 +112,7 @@ module Core =
     eventStore: Event list * ProgressId
     eventArchive: EventArchive
     gameState: GameState
-    renderData: RenderData
+    renderData: RenderData<State>
   }
 
   type StateRecord =

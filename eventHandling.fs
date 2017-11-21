@@ -25,17 +25,20 @@ module EventHandling =
 
 
   // EVENTS
+  let debugEvent (_ : I.EventParameters) =
+    createEvent DebugEvent
 
-  // LoginEvent has id as optional, so no matching is needed here
-  let loginEvent ({ id = playerId } : EventParameters) =
-    LoginEvent playerId |> createEvent
-//    match eventParameters with
-//    | { id = Some playerId } -> createEvent LoginEvent playerId
-//    | _ -> createEvent EventParameterErrorEvent "loginEvent"
+  let handleDebugEvent state =
+    pushRenderCommand (Debug state) state
+
+  let loginEvent ({ id = playerId } : I.EventParameters) =
+    match playerId with
+    | None -> LoginEvent None |> createEvent
+    | Some playerId -> LoginEvent (Some playerId) |> createEvent
 
   let handleLoginEvent state =
     match getProcessingEventType state with
-    | LoginEvent (Some playerId) -> updateMyId (Some playerId) state
+    | LoginEvent (Some playerId) -> updateMyId (Some playerId) state |> pushRenderCommand (Print playerId)
     | _ -> state // make sure this gets send to the server
 
 
@@ -45,6 +48,7 @@ module EventHandling =
     getProcessingEventType state
     |> function
       | (LoginEvent _) -> handleLoginEvent state
+      | DebugEvent -> handleDebugEvent state
       | _ -> state
 
   let storeEvent evnt =
